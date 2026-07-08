@@ -38,7 +38,7 @@ SYSTEM_PROMPT = (
 
 historico = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder=".")
 
 
 def limpar_audios_antigos(max_idade_segundos: int = 300):
