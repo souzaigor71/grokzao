@@ -27,6 +27,8 @@ EDGE_TTS_VOZ = "pt-BR-AntonioNeural"
 AUDIO_DIR = os.path.join(os.path.dirname(__file__), "static", "audio")
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
+HISTORICO_PATH = os.path.join(os.path.dirname(__file__), "historico.json")
+
 SYSTEM_PROMPT = (
     "Você é GrokZão, um robô humanoide brasileiro descontraído, sarcástico e inteligente. "
     "Fala naturalmente, como se estivesse conversando de verdade, sem parecer um assistente formal.\n\n"
@@ -36,7 +38,27 @@ SYSTEM_PROMPT = (
     "A emoção deve refletir o tom real da resposta que você deu."
 )
 
-historico = [{"role": "system", "content": SYSTEM_PROMPT}]
+def carregar_historico():
+    if os.path.exists(HISTORICO_PATH):
+        try:
+            with open(HISTORICO_PATH, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+                if isinstance(dados, list) and dados:
+                    return dados
+        except (json.JSONDecodeError, OSError):
+            pass
+    return [{"role": "system", "content": SYSTEM_PROMPT}]
+
+
+def salvar_historico():
+    try:
+        with open(HISTORICO_PATH, "w", encoding="utf-8") as f:
+            json.dump(historico, f, ensure_ascii=False, indent=2)
+    except OSError as e:
+        print(f"Erro ao salvar histórico: {e}")
+
+
+historico = carregar_historico()
 
 app = Flask(__name__, template_folder=".")
 
@@ -88,6 +110,7 @@ def obter_resposta(texto_usuario: str):
     if len(historico) > 21:
         historico[:] = [historico[0]] + historico[-20:]
 
+    salvar_historico()
     return resposta, emocao
 
 
@@ -130,6 +153,7 @@ def chat():
 def reset():
     global historico
     historico = [{"role": "system", "content": SYSTEM_PROMPT}]
+    salvar_historico()
     return jsonify({"ok": True})
 
 
