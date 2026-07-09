@@ -44,6 +44,9 @@ def carregar_historico():
             with open(HISTORICO_PATH, "r", encoding="utf-8") as f:
                 dados = json.load(f)
                 if isinstance(dados, list) and dados:
+                    # Garante que o prompt do sistema inicial está correto
+                    if dados[0]["role"] != "system":
+                        dados.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
                     return dados
         except (json.JSONDecodeError, OSError):
             pass
@@ -85,9 +88,17 @@ def obter_resposta(texto_usuario: str):
     global historico
     historico.append({"role": "user", "content": texto_usuario})
 
+    # Mantém a memória ILIMITADA no arquivo, mas envia as últimas 40 mensagens 
+    # para a API não estourar o limite de contexto do modelo.
+    # O histórico completo continua salvo e intocado no arquivo JSON.
+    if len(historico) > 41:
+        mensagens_enviar = [historico[0]] + historico[-40:]
+    else:
+        mensagens_enviar = historico
+
     resp = client.chat.completions.create(
         model=MODELO,
-        messages=historico,
+        messages=mensagens_enviar,
         temperature=0.8,
         max_tokens=500,
         response_format={"type": "json_object"},
@@ -106,10 +117,7 @@ def obter_resposta(texto_usuario: str):
 
     historico.append({"role": "assistant", "content": bruto})
 
-    # mantém o histórico enxuto (system + últimas 20 mensagens)
-    if len(historico) > 21:
-        historico[:] = [historico[0]] + historico[-20:]
-
+    # REMOVIDO o corte drástico do histórico global. Agora ele cresce indefinidamente.
     salvar_historico()
     return resposta, emocao
 
@@ -163,6 +171,24 @@ def obter_historico():
                 texto = dados.get("resposta", item["content"])
             except json.JSONDecodeError:
                 texto = item["content"]
+            mensagens.append({"quem": "bot", "texto": texto})
+    return jsonify({"mensagens": mensagens})
+
+
+@app.route("/reset", methods=["POST"])
+def reset():
+    global historico
+    historico = [{"role": "system", "content": SYSTEM_PROMPT}]
+    salvar_historico()
+    return jsonify({"ok": True})
+
+
+if __name__ == "__main__":
+    porta = int(os.environ.get("PORT", 5000))
+    print("🤖 GrokZão rodando!")
+    print(f"   No mesmo dispositivo: http://localhost:{porta}")
+    print(f"   De outro dispositivo na mesma rede Wi-Fi: http://SEU_IP_LOCAL:{porta}")
+    app.run(host="0.0.0.0", port=porta, debug=False) texto = item["content"]
             mensagens.append({"quem": "bot", "texto": texto})
     return jsonify({"mensagens": mensagens})
 
