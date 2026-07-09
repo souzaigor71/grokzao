@@ -183,17 +183,35 @@
   .bravo .mouth{ background:#a52c44; border-radius:14px 14px 0 0; transform:translateY(4px); }
 
   .panel{
-    margin-top:18px;
-    width:100%;
-    max-width:520px;
+    position:fixed;
+    top:16px;
+    right:16px;
+    width:300px;
+    max-width:calc(100vw - 32px);
+    max-height:70vh;
+    display:flex;
+    flex-direction:column;
     background:var(--panel);
     border-radius:16px;
     padding:14px;
     backdrop-filter:blur(6px);
     box-shadow:0 8px 24px rgba(0,0,0,.35);
+    z-index:20;
+  }
+  @media (max-width: 640px){
+    .panel{
+      top:auto;
+      bottom:12px;
+      right:12px;
+      left:12px;
+      width:auto;
+      max-width:none;
+      max-height:45vh;
+    }
   }
   .log{
-    max-height:220px;
+    flex:1;
+    min-height:80px;
     overflow-y:auto;
     padding:6px 4px;
     display:flex;
@@ -324,7 +342,7 @@ function animarBoca(){
   analyser.getByteFrequencyData(dataArray);
   let soma = 0;
   for (let i=0;i<dataArray.length;i++) soma += dataArray[i];
-  const media = soma / dataArray.length;
+  const media = soma / dataArray.length; // 0-255
   const altura = Math.min(30, 6 + media*0.5);
   mouth.style.height = altura + 'px';
   rafId = requestAnimationFrame(animarBoca);
@@ -405,15 +423,12 @@ async function carregarHistorico(){
   try{
     const resp = await fetch('/historico');
     const dados = await resp.json();
-    if(dados && dados.mensagens){
-      log.innerHTML = '';
-      dados.mensagens.forEach(m => addMsg(m.texto, m.quem));
-    }
+    (dados.mensagens || []).forEach(m => addMsg(m.texto, m.quem));
   }catch(e){
     console.warn('Não foi possível carregar o histórico salvo.');
   }
 }
-window.addEventListener('DOMContentLoaded', carregarHistorico);
+carregarHistorico();
 </script>
 
 </body>
