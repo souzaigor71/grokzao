@@ -399,6 +399,18 @@ async function enviar(){
 
 sendBtn.addEventListener('click', enviar);
 input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') enviar(); });
+
+// ---------- Carregar histórico salvo ao abrir a página ----------
+async function carregarHistorico(){
+  try{
+    const resp = await fetch('/historico');
+    const dados = await resp.json();
+    (dados.mensagens || []).forEach(m => addMsg(m.texto, m.quem));
+  }catch(e){
+    console.warn('Não foi possível carregar o histórico salvo.');
+  }
+}
+carregarHistorico();
 </script>
 
 </body>

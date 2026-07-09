@@ -149,6 +149,24 @@ def chat():
     })
 
 
+@app.route("/historico", methods=["GET"])
+def obter_historico():
+    mensagens = []
+    for item in historico:
+        if item["role"] == "system":
+            continue
+        if item["role"] == "user":
+            mensagens.append({"quem": "user", "texto": item["content"]})
+        elif item["role"] == "assistant":
+            try:
+                dados = json.loads(item["content"])
+                texto = dados.get("resposta", item["content"])
+            except json.JSONDecodeError:
+                texto = item["content"]
+            mensagens.append({"quem": "bot", "texto": texto})
+    return jsonify({"mensagens": mensagens})
+
+
 @app.route("/reset", methods=["POST"])
 def reset():
     global historico
