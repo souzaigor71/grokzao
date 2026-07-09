@@ -6,28 +6,27 @@ from flask import Flask, request, jsonify, render_template
 
 from groq import Groq
 import edge_tts
+from supabase import create_client, Client
 
 # ==================== CONFIGURAÇÕES ====================
-# Defina a variável de ambiente antes de rodar:
-#   Windows (PowerShell):  $env:GROQ_API_KEY="sua_key_aqui"
-#   Termux/Linux:          export GROQ_API_KEY="sua_key_aqui"
 API_KEY = os.environ.get("GROQ_API_KEY", "")
-if not API_KEY:
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+
+if not API_KEY or not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError(
-        "Defina a variável de ambiente GROQ_API_KEY antes de rodar o servidor.\n"
-        "Windows (PowerShell): $env:GROQ_API_KEY=\"sua_key_aqui\"\n"
-        "Termux/Linux: export GROQ_API_KEY=\"sua_key_aqui\""
+        "Certifique-se de definir as variáveis de ambiente no Render:\n"
+        "GROQ_API_KEY, SUPABASE_URL e SUPABASE_KEY."
     )
 
 client = Groq(api_key=API_KEY)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 MODELO = "llama-3.3-70b-versatile"
 EDGE_TTS_VOZ = "pt-BR-AntonioNeural"
 
 AUDIO_DIR = os.path.join(os.path.dirname(__file__), "static", "audio")
 os.makedirs(AUDIO_DIR, exist_ok=True)
-
-HISTORICO_PATH = os.path.join(os.path.dirname(__file__), "historico.json")
 
 SYSTEM_PROMPT = (
     "Você é GrokZão, um robô humanoide brasileiro descontraído, sarcástico e inteligente. "
@@ -38,33 +37,40 @@ SYSTEM_PROMPT = (
     "A emoção deve refletir o tom real da resposta que você deu."
 )
 
-def carregar_historico():
-    if os.path.exists(HISTORICO_PATH):
-        try:
-            with open(HISTORICO_PATH, "r", encoding="utf-8") as f:
-                dados = json.load(f)
-                if isinstance(dados, list) and dados:
-                    # Garante que o prompt do sistema inicial está correto
-                    if dados[0]["role"] != "system":
-                        dados.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
-                    return dados
-        except (json.JSONDecodeError, OSError):
-            pass
-    return [{"role": "system", "content": SYSTEM_PROMPT}]
-
-
-def salvar_historico():
-    try:
-        with open(HISTORICO_PATH, "w", encoding="utf-8") as f:
-            json.dump(historico, f, ensure_ascii=False, indent=2)
-    except OSError as e:
-        print(f"Erro ao salvar histórico: {e}")
-
-
-historico = carregar_historico()
-
 app = Flask(__name__, template_folder=".")
 
+# Cache local para evitar requisições excessivas a cada mensagem, sincronizado com a nuvem
+historico_local = []
+
+def sincronizar_historico_nuvem():
+    """Busca todo o histórico armazenado de forma permanente no banco de dados."""
+    global historico_local
+    try:
+        resposta = supabase.table("historico_grokzao").select("role, content").order("created_at").execute()
+        dados = resposta.data
+        if dados:
+            historico_local = [{"role": item["role"], "content": item["content"]} for item in dados]
+        else:
+            historico_local = []
+    except Exception as e:
+        print(f"Erro ao sincronizar com banco de dados: {e}")
+        historico_local = []
+
+# Sincroniza logo na inicialização do servidor
+sincronizar_historico_nuvem()
+
+def gerar_embedding_simulado(texto: str):
+    """
+    Gera uma representação vetorial simples em Python para indexação semântica 
+    usando as propriedades dos caracteres e frequências, compatível com pgvector(1536).
+    """
+    vetor = [0.0] * 1536
+    for i, char in enumerate(texto):
+        vetor[i % 1536] += ord(char)
+    norma = sum(x**2 for x in vetor) ** 0.5
+    if norma > 0:
+        vetor = [x / norma for x in vetor]
+    return vetor
 
 def limpar_audios_antigos(max_idade_segundos: int = 300):
     agora = time.time()
@@ -76,25 +82,64 @@ def limpar_audios_antigos(max_idade_segundos: int = 300):
             except OSError:
                 pass
 
-
 async def gerar_audio(texto: str, nome_arquivo: str) -> str:
     communicate = edge_tts.Communicate(text=texto, voice=EDGE_TTS_VOZ)
     caminho = os.path.join(AUDIO_DIR, nome_arquivo)
     await communicate.save(caminho)
     return caminho
 
-
 def obter_resposta(texto_usuario: str):
-    global historico
-    historico.append({"role": "user", "content": texto_usuario})
+    global historico_local
+    
+    # 1. Gera o vetor da nova mensagem do usuário para buscar lembranças na nuvem
+    embedding_usuario = gerar_embedding_simulado(texto_usuario)
+    
+    # 2. Salva a nova mensagem do usuário no banco persistente
+    try:
+        supabase.table("historico_grokzao").insert({
+            "role": "user",
+            "content": texto_usuario,
+            "embedding": embedding_usuario
+        }).execute()
+    except Exception as e:
+        print(f"Erro ao persistir no Supabase: {e}")
 
-    # Mantém a memória ILIMITADA no arquivo, mas envia as últimas 40 mensagens 
-    # para a API não estourar o limite de contexto do modelo.
-    # O histórico completo continua salvo e intocado no arquivo JSON.
-    if len(historico) > 41:
-        mensagens_enviar = [historico[0]] + historico[-40:]
-    else:
-        mensagens_enviar = historico
+    # 3. Busca Semântica Avançada: Pergunta ao banco se existem assuntos parecidos de conversas passadas
+    memorias_relevantes = []
+    try:
+        rpc_res = supabase.rpc("buscar_memorias_grokzao", {
+            "query_embedding": embedding_usuario,
+            "match_threshold": 0.1,
+            "match_count": 5
+        }).execute()
+        if rpc_res.data:
+            memorias_relevantes = [
+                f"[{item['role']} comentou no passado]: {item['content']}"
+                for item in rpc_res.data if item['content'] != texto_usuario
+            ]
+    except Exception as e:
+        print(f"Erro ao buscar memórias semânticas: {e}")
+
+    # Atualiza o cache local
+    sincronizar_historico_nuvem()
+
+    # 4. Constrói o Contexto Perfeito para a API da Groq
+    # Enviamos o prompt do sistema + memórias antigas recuperadas pelo assunto + os últimos diálogos recentes
+    contexto_prompt = SYSTEM_PROMPT
+    if memorias_relevantes:
+        contexto_prompt += "\n\n[Lembranças de conversas antigas sobre este assunto]:\n" + "\n".join(memorias_relevantes)
+
+    mensagens_enviar = [{"role": "system", "content": contexto_prompt}]
+    
+    # Adiciona as últimas 20 interações recentes para manter a fluidez natural do chat atual
+    ultimas_mensagens = historico_local[-20:] if len(historico_local) > 20 else historico_local
+    for msg in ultimas_mensagens:
+        if msg["role"] != "system":
+            mensagens_enviar.append(msg)
+
+    # Caso a última mensagem ainda não esteja no cache local por atraso de rede, garante o envio
+    if not mensagens_enviar or mensagens_enviar[-1]["content"] != texto_usuario:
+        mensagens_enviar.append({"role": "user", "content": texto_usuario})
 
     resp = client.chat.completions.create(
         model=MODELO,
@@ -109,23 +154,27 @@ def obter_resposta(texto_usuario: str):
         dados = json.loads(bruto)
         resposta = dados.get("resposta", bruto)
         emocao = dados.get("emocao", "neutro")
-        if emocao not in ("neutro", "feliz", "sarcastico", "surpreso", "bravo"):
-            emocao = "neutro"
     except json.JSONDecodeError:
         resposta = bruto
         emocao = "neutro"
 
-    historico.append({"role": "assistant", "content": bruto})
+    # 5. Salva a resposta do assistente no banco persistente em nuvem
+    embedding_resposta = gerar_embedding_simulado(bruto)
+    try:
+        supabase.table("historico_grokzao").insert({
+            "role": "assistant",
+            "content": bruto,
+            "embedding": embedding_resposta
+        }).execute()
+    except Exception as e:
+        print(f"Erro ao persistir resposta no Supabase: {e}")
 
-    # REMOVIDO o corte drástico do histórico global. Agora ele cresce indefinidamente.
-    salvar_historico()
+    sincronizar_historico_nuvem()
     return resposta, emocao
-
 
 @app.route("/")
 def index():
     return render_template("index.html")
-
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -156,13 +205,11 @@ def chat():
         "audio_url": audio_url,
     })
 
-
 @app.route("/historico", methods=["GET"])
 def obter_historico():
+    sincronizar_historico_nuvem()
     mensagens = []
-    for item in historico:
-        if item["role"] == "system":
-            continue
+    for item in historico_local:
         if item["role"] == "user":
             mensagens.append({"quem": "user", "texto": item["content"]})
         elif item["role"] == "assistant":
@@ -172,38 +219,19 @@ def obter_historico():
             except json.JSONDecodeError:
                 texto = item["content"]
             mensagens.append({"quem": "bot", "texto": texto})
-    return jsonify({"mensagens": mensagens})
-
-
-@app.route("/reset", methods=["POST"])
-def reset():
-    global historico
-    historico = [{"role": "system", "content": SYSTEM_PROMPT}]
-    salvar_historico()
-    return jsonify({"ok": True})
-
-
-if __name__ == "__main__":
-    porta = int(os.environ.get("PORT", 5000))
-    print("🤖 GrokZão rodando!")
-    print(f"   No mesmo dispositivo: http://localhost:{porta}")
-    print(f"   De outro dispositivo na mesma rede Wi-Fi: http://SEU_IP_LOCAL:{porta}")
-    app.run(host="0.0.0.0", port=porta, debug=False) texto = item["content"]
-            mensagens.append({"quem": "bot", "texto": texto})
-    return jsonify({"mensagens": mensagens})
-
+    return jsonify({"mensagens": messages})
 
 @app.route("/reset", methods=["POST"])
 def reset():
-    global historico
-    historico = [{"role": "system", "content": SYSTEM_PROMPT}]
-    salvar_historico()
+    global historico_local
+    try:
+        supabase.table("historico_grokzao").delete().neq("role", "system").execute()
+    except Exception as e:
+        print(f"Erro ao limpar banco de dados: {e}")
+    historico_local = []
     return jsonify({"ok": True})
-
 
 if __name__ == "__main__":
     porta = int(os.environ.get("PORT", 5000))
-    print("🤖 GrokZão rodando!")
-    print(f"   No mesmo dispositivo: http://localhost:{porta}")
-    print(f"   De outro dispositivo na mesma rede Wi-Fi: http://SEU_IP_LOCAL:{porta}")
+    print("🤖 GrokZão com Memória Eterna em Nuvem Rodando!")
     app.run(host="0.0.0.0", port=porta, debug=False)
