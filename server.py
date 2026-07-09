@@ -2,6 +2,7 @@ import os
 import json
 import time
 import asyncio
+import requests
 from flask import Flask, request, jsonify, render_template
 
 from groq import Groq
@@ -29,9 +30,22 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 
 ESTADO_PATH = os.path.join(os.path.dirname(__file__), "historico.json")
 
+# Armazenamento remoto opcional (JSONBin.io) — se configurado, a memória
+# sobrevive a reinícios/adormecimentos do servidor. Se não configurado,
+# usa um arquivo local (funciona, mas não sobrevive a redeploys/sono no Render).
+JSONBIN_API_KEY = os.environ.get("JSONBIN_API_KEY", "")
+JSONBIN_BIN_ID = os.environ.get("JSONBIN_BIN_ID", "")
+JSONBIN_URL = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}"
+
 SYSTEM_PROMPT = (
     "Você é GrokZão, um robô humanoide brasileiro descontraído, sarcástico e inteligente. "
     "Fala naturalmente, como se estivesse conversando de verdade, sem parecer um assistente formal.\n\n"
+    "IMPORTANTE SOBRE MEMÓRIA: você TEM memória das conversas anteriores com esse usuário — ela é "
+    "fornecida a você nas mensagens anteriores desta conversa e, quando a conversa é longa, num "
+    "resumo enviado como mensagem de sistema. Quando o usuário perguntar se você lembra de algo, "
+    "OLHE o histórico/resumo fornecido e responda usando essas informações. NUNCA diga genericamente "
+    "que 'não guarda memória entre conversas' — isso é falso nesse sistema. Só diga que não lembra de "
+    "algo específico se esse assunto realmente não aparecer em nenhuma mensagem anterior nem no resumo.\n\n"
     "Responda SEMPRE em JSON puro, sem markdown e sem texto fora do JSON, exatamente neste formato:\n"
     '{"resposta": "texto da resposta em português, natural e falado", '
     '"emocao": "neutro|feliz|sarcastico|surpreso|bravo"}\n\n'
@@ -50,13 +64,28 @@ def estado_padrao():
 
 
 def carregar_estado():
+    if JSONBIN_API_KEY and JSONBIN_BIN_ID:
+        try:
+            resp = requests.get(
+                f"{JSONBIN_URL}/latest",
+                headers={"X-Master-Key": JSONBIN_API_KEY},
+                timeout=10,
+            )
+            if resp.ok:
+                dados = resp.json().get("record", {})
+                if isinstance(dados, dict) and "mensagens" in dados:
+                    return dados
+        except requests.RequestException as e:
+            print(f"Erro ao carregar do JSONBin (usando estado vazio): {e}")
+        return estado_padrao()
+
+    # ---- fallback: arquivo local ----
     if os.path.exists(ESTADO_PATH):
         try:
             with open(ESTADO_PATH, "r", encoding="utf-8") as f:
                 dados = json.load(f)
                 if isinstance(dados, dict) and "mensagens" in dados:
                     return dados
-                # compatibilidade com o formato antigo (lista simples)
                 if isinstance(dados, list):
                     msgs = [m for m in dados if m.get("role") != "system"]
                     return {"resumo": "", "mensagens": msgs}
@@ -66,6 +95,22 @@ def carregar_estado():
 
 
 def salvar_estado():
+    if JSONBIN_API_KEY and JSONBIN_BIN_ID:
+        try:
+            requests.put(
+                JSONBIN_URL,
+                json=estado,
+                headers={
+                    "X-Master-Key": JSONBIN_API_KEY,
+                    "Content-Type": "application/json",
+                },
+                timeout=10,
+            )
+        except requests.RequestException as e:
+            print(f"Erro ao salvar no JSONBin: {e}")
+        return
+
+    # ---- fallback: arquivo local ----
     try:
         with open(ESTADO_PATH, "w", encoding="utf-8") as f:
             json.dump(estado, f, ensure_ascii=False, indent=2)
