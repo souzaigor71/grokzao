@@ -29,7 +29,7 @@ AUDIO_DIR = os.path.join(os.path.dirname(__file__), "static", "audio")
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
 SYSTEM_PROMPT = (
-    "Você é GrokZão, um robô humanoid brasileiro descontraído, sarcástico e inteligente. "
+    "Você é GrokZão, um robô humanoide brasileiro descontraído, sarcástico e inteligente. "
     "Fala naturalmente, como se estivesse conversando de verdade, sem parecer um assistente formal.\n\n"
     "Responda SEMPRE em JSON puro, sem markdown e sem texto fora do JSON, exatamente neste formato:\n"
     '{"resposta": "texto da resposta em português, natural e falado", '
@@ -39,14 +39,13 @@ SYSTEM_PROMPT = (
 
 app = Flask(__name__, template_folder=".")
 
-# Cache local para manter o histórico fluido e integrado ao seu front-end
 historico_local = []
 
 def sincronizar_historico_nuvem():
-    """Busca o histórico completo armazenado de forma permanente na nuvem."""
+    """Busca o histórico completo armazenado na nuvem ordenado por data de criação."""
     global historico_local
     try:
-        resposta = supabase.table("historico_grokzao").select("role, content").order("created_at").execute()
+        resposta = supabase.table("historico_grokzao").select("role, content").order("created_at", ascending=True).execute()
         dados = resposta.data
         if dados:
             historico_local = [{"role": item["role"], "content": item["content"]} for item in dados]
@@ -56,14 +55,10 @@ def sincronizar_historico_nuvem():
         print(f"Erro ao sincronizar com banco de dados: {e}")
         historico_local = []
 
-# Sincroniza as mensagens assim que o servidor inicializa
+# Sincroniza logo na inicialização
 sincronizar_historico_nuvem()
 
 def gerar_embedding_simulado(texto: str):
-    """
-    Gera uma representação vetorial matemática estável em Python para indexação semântica 
-    usando as propriedades dos caracteres e frequências, compatível com pgvector(1536).
-    """
     vetor = [0.0] * 1536
     for i, char in enumerate(texto):
         vetor[i % 1536] += ord(char)
@@ -91,10 +86,8 @@ async def gerar_audio(texto: str, nome_arquivo: str) -> str:
 def obter_resposta(texto_usuario: str):
     global historico_local
     
-    # 1. Gera o vetor para a busca semântica
     embedding_usuario = gerar_embedding_simulado(texto_usuario)
     
-    # 2. Insere de forma permanente a mensagem do usuário no banco persistente
     try:
         supabase.table("historico_grokzao").insert({
             "role": "user",
@@ -104,7 +97,7 @@ def obter_resposta(texto_usuario: str):
     except Exception as e:
         print(f"Erro ao persistir no Supabase: {e}")
 
-    # 3. Busca Semântica: Pergunta ao banco por lembranças relevantes sobre o assunto atual
+    # Busca Semântica: Traz o contexto antigo se o usuário tocar em assuntos passados
     memorias_relevantes = []
     try:
         rpc_res = supabase.rpc("buscar_memorias_grokzao", {
@@ -120,23 +113,20 @@ def obter_resposta(texto_usuario: str):
     except Exception as e:
         print(f"Erro ao buscar memórias semânticas: {e}")
 
-    # Força atualização do cache para incluir o que acabou de ser gravado
     sincronizar_historico_nuvem()
 
-    # 4. Injeta as memórias recuperadas diretamente no contexto da API da Groq
     contexto_prompt = SYSTEM_PROMPT
     if memorias_relevantes:
-        contexto_prompt += "\n\n[Lembranças de conversas antigas que você lembrou sobre este assunto]:\n" + "\n".join(memorias_relevantes)
+        contexto_prompt += "\n\n[Lembranças cruciais de conversas antigas sobre este assunto. Use-as para validar que você se lembra do que já foi falado!]:\n" + "\n".join(memorias_relevantes)
 
     mensagens_enviar = [{"role": "system", "content": contexto_prompt}]
     
-    # Envia as últimas 20 mensagens recentes para manter a fluidez contínua do diálogo atual
+    # Adiciona os últimos diálogos recentes para manter o fluxo imediato do chat
     ultimas_mensagens = historico_local[-20:] if len(historico_local) > 20 else historico_local
     for msg in ultimas_mensagens:
         if msg["role"] != "system":
             mensagens_enviar.append(msg)
 
-    # Garante que a última mensagem digitada faça parte do envio
     if not mensagens_enviar or mensagens_enviar[-1]["content"] != texto_usuario:
         mensagens_enviar.append({"role": "user", "content": texto_usuario})
 
@@ -157,7 +147,6 @@ def obter_resposta(texto_usuario: str):
         resposta = bruto
         emocao = "neutro"
 
-    # 5. Salva a resposta gerada pelo robô no banco definitivo em nuvem
     embedding_resposta = gerar_embedding_simulado(bruto)
     try:
         supabase.table("historico_grokzao").insert({
@@ -232,5 +221,5 @@ def reset():
 
 if __name__ == "__main__":
     porta = int(os.environ.get("PORT", 5000))
-    print("🤖 GrokZão com Memória Eterna em Nuvem Rodando!")
+    print("🤖 GrokZão com Memória Ativa Rodando!")
     app.run(host="0.0.0.0", port=porta, debug=False)
