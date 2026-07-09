@@ -6,27 +6,28 @@ from flask import Flask, request, jsonify, render_template
 
 from groq import Groq
 import edge_tts
-from supabase import create_client, Client
 
 # ==================== CONFIGURAÇÕES ====================
+# Defina a variável de ambiente antes de rodar:
+#   Windows (PowerShell):  $env:GROQ_API_KEY="sua_key_aqui"
+#   Termux/Linux:          export GROQ_API_KEY="sua_key_aqui"
 API_KEY = os.environ.get("GROQ_API_KEY", "")
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
-
-if not API_KEY or not SUPABASE_URL or not SUPABASE_KEY:
+if not API_KEY:
     raise RuntimeError(
-        "Certifique-se de definir as variáveis de ambiente no Render:\n"
-        "GROQ_API_KEY, SUPABASE_URL e SUPABASE_KEY."
+        "Defina a variável de ambiente GROQ_API_KEY antes de rodar o servidor.\n"
+        "Windows (PowerShell): $env:GROQ_API_KEY=\"sua_key_aqui\"\n"
+        "Termux/Linux: export GROQ_API_KEY=\"sua_key_aqui\""
     )
 
 client = Groq(api_key=API_KEY)
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 MODELO = "llama-3.3-70b-versatile"
 EDGE_TTS_VOZ = "pt-BR-AntonioNeural"
 
 AUDIO_DIR = os.path.join(os.path.dirname(__file__), "static", "audio")
 os.makedirs(AUDIO_DIR, exist_ok=True)
+
+ESTADO_PATH = os.path.join(os.path.dirname(__file__), "historico.json")
 
 SYSTEM_PROMPT = (
     "Você é GrokZão, um robô humanoide brasileiro descontraído, sarcástico e inteligente. "
@@ -37,35 +38,43 @@ SYSTEM_PROMPT = (
     "A emoção deve refletir o tom real da resposta que você deu."
 )
 
+# Quantas mensagens (user+assistant) mantemos "cruas" antes de resumir as mais antigas
+LIMITE_MENSAGENS_RECENTES = 20
+MARGEM_ANTES_DE_RESUMIR = 6  # só resume quando passar de 26, pra não ficar resumindo toda hora
+
 app = Flask(__name__, template_folder=".")
 
-historico_local = []
 
-def sincronizar_historico_nuvem():
-    """Busca o histórico completo armazenado na nuvem ordenado por data de criação."""
-    global historico_local
+def estado_padrao():
+    return {"resumo": "", "mensagens": []}
+
+
+def carregar_estado():
+    if os.path.exists(ESTADO_PATH):
+        try:
+            with open(ESTADO_PATH, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+                if isinstance(dados, dict) and "mensagens" in dados:
+                    return dados
+                # compatibilidade com o formato antigo (lista simples)
+                if isinstance(dados, list):
+                    msgs = [m for m in dados if m.get("role") != "system"]
+                    return {"resumo": "", "mensagens": msgs}
+        except (json.JSONDecodeError, OSError):
+            pass
+    return estado_padrao()
+
+
+def salvar_estado():
     try:
-        resposta = supabase.table("historico_grokzao").select("role, content").order("created_at", ascending=True).execute()
-        dados = resposta.data
-        if dados:
-            historico_local = [{"role": item["role"], "content": item["content"]} for item in dados]
-        else:
-            historico_local = []
-    except Exception as e:
-        print(f"Erro ao sincronizar com banco de dados: {e}")
-        historico_local = []
+        with open(ESTADO_PATH, "w", encoding="utf-8") as f:
+            json.dump(estado, f, ensure_ascii=False, indent=2)
+    except OSError as e:
+        print(f"Erro ao salvar histórico: {e}")
 
-# Sincroniza logo na inicialização
-sincronizar_historico_nuvem()
 
-def gerar_embedding_simulado(texto: str):
-    vetor = [0.0] * 1536
-    for i, char in enumerate(texto):
-        vetor[i % 1536] += ord(char)
-    norma = sum(x**2 for x in vetor) ** 0.5
-    if norma > 0:
-        vetor = [x / norma for x in vetor]
-    return vetor
+estado = carregar_estado()
+
 
 def limpar_audios_antigos(max_idade_segundos: int = 300):
     agora = time.time()
@@ -77,62 +86,66 @@ def limpar_audios_antigos(max_idade_segundos: int = 300):
             except OSError:
                 pass
 
+
 async def gerar_audio(texto: str, nome_arquivo: str) -> str:
     communicate = edge_tts.Communicate(text=texto, voice=EDGE_TTS_VOZ)
     caminho = os.path.join(AUDIO_DIR, nome_arquivo)
     await communicate.save(caminho)
     return caminho
 
+
+def gerar_resumo(resumo_atual: str, mensagens_antigas: list) -> str:
+    """Usa o próprio Groq pra condensar mensagens antigas num resumo compacto."""
+    partes = []
+    for m in mensagens_antigas:
+        if m["role"] == "user":
+            partes.append(f"Usuário: {m['content']}")
+        elif m["role"] == "assistant":
+            try:
+                texto = json.loads(m["content"]).get("resposta", "")
+            except json.JSONDecodeError:
+                texto = m["content"]
+            partes.append(f"GrokZão: {texto}")
+    trecho = "\n".join(partes)
+
+    prompt = (
+        "Resuma de forma concisa (no máximo 150 palavras) os pontos importantes da conversa abaixo, "
+        "para servir de memória de longo prazo de um assistente. Mantenha fatos, preferências e "
+        "assuntos em aberto mencionados pelo usuário. Escreva em português, só o resumo, sem comentários.\n\n"
+    )
+    if resumo_atual:
+        prompt += f"Resumo anterior: {resumo_atual}\n\n"
+    prompt += f"Novas mensagens a incorporar:\n{trecho}"
+
+    try:
+        resp = client.chat.completions.create(
+            model=MODELO,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=300,
+        )
+        return resp.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"Erro ao gerar resumo: {e}")
+        return resumo_atual  # se falhar, mantém o resumo antigo em vez de perder tudo
+
+
 def obter_resposta(texto_usuario: str):
-    global historico_local
-    
-    embedding_usuario = gerar_embedding_simulado(texto_usuario)
-    
-    try:
-        supabase.table("historico_grokzao").insert({
-            "role": "user",
-            "content": texto_usuario,
-            "embedding": embedding_usuario
-        }).execute()
-    except Exception as e:
-        print(f"Erro ao persistir no Supabase: {e}")
+    global estado
 
-    # Busca Semântica: Traz o contexto antigo se o usuário tocar em assuntos passados
-    memorias_relevantes = []
-    try:
-        rpc_res = supabase.rpc("buscar_memorias_grokzao", {
-            "query_embedding": embedding_usuario,
-            "match_threshold": 0.1,
-            "match_count": 5
-        }).execute()
-        if rpc_res.data:
-            memorias_relevantes = [
-                f"[{item['role']} comentou no passado]: {item['content']}"
-                for item in rpc_res.data if item['content'] != texto_usuario
-            ]
-    except Exception as e:
-        print(f"Erro ao buscar memórias semânticas: {e}")
+    estado["mensagens"].append({"role": "user", "content": texto_usuario})
 
-    sincronizar_historico_nuvem()
-
-    contexto_prompt = SYSTEM_PROMPT
-    if memorias_relevantes:
-        contexto_prompt += "\n\n[Lembranças cruciais de conversas antigas sobre este assunto. Use-as para validar que você se lembra do que já foi falado!]:\n" + "\n".join(memorias_relevantes)
-
-    mensagens_enviar = [{"role": "system", "content": contexto_prompt}]
-    
-    # Adiciona os últimos diálogos recentes para manter o fluxo imediato do chat
-    ultimas_mensagens = historico_local[-20:] if len(historico_local) > 20 else historico_local
-    for msg in ultimas_mensagens:
-        if msg["role"] != "system":
-            mensagens_enviar.append(msg)
-
-    if not mensagens_enviar or mensagens_enviar[-1]["content"] != texto_usuario:
-        mensagens_enviar.append({"role": "user", "content": texto_usuario})
+    contexto = [{"role": "system", "content": SYSTEM_PROMPT}]
+    if estado["resumo"]:
+        contexto.append({
+            "role": "system",
+            "content": f"Resumo da conversa até agora (memória de longo prazo, use pra manter contexto): {estado['resumo']}",
+        })
+    contexto += estado["mensagens"]
 
     resp = client.chat.completions.create(
         model=MODELO,
-        messages=mensagens_enviar,
+        messages=contexto,
         temperature=0.8,
         max_tokens=500,
         response_format={"type": "json_object"},
@@ -143,26 +156,29 @@ def obter_resposta(texto_usuario: str):
         dados = json.loads(bruto)
         resposta = dados.get("resposta", bruto)
         emocao = dados.get("emocao", "neutro")
+        if emocao not in ("neutro", "feliz", "sarcastico", "surpreso", "bravo"):
+            emocao = "neutro"
     except json.JSONDecodeError:
         resposta = bruto
         emocao = "neutro"
 
-    embedding_resposta = gerar_embedding_simulado(bruto)
-    try:
-        supabase.table("historico_grokzao").insert({
-            "role": "assistant",
-            "content": bruto,
-            "embedding": embedding_resposta
-        }).execute()
-    except Exception as e:
-        print(f"Erro ao persistir resposta no Supabase: {e}")
+    estado["mensagens"].append({"role": "assistant", "content": bruto})
 
-    sincronizar_historico_nuvem()
+    # se passou do limite, resume as mais antigas e mantém só as recentes
+    if len(estado["mensagens"]) > LIMITE_MENSAGENS_RECENTES + MARGEM_ANTES_DE_RESUMIR:
+        antigas = estado["mensagens"][:-LIMITE_MENSAGENS_RECENTES]
+        recentes = estado["mensagens"][-LIMITE_MENSAGENS_RECENTES:]
+        estado["resumo"] = gerar_resumo(estado["resumo"], antigas)
+        estado["mensagens"] = recentes
+
+    salvar_estado()
     return resposta, emocao
+
 
 @app.route("/")
 def index():
     return render_template("index.html")
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -193,11 +209,11 @@ def chat():
         "audio_url": audio_url,
     })
 
+
 @app.route("/historico", methods=["GET"])
 def obter_historico():
-    sincronizar_historico_nuvem()
     mensagens = []
-    for item in historico_local:
+    for item in estado["mensagens"]:
         if item["role"] == "user":
             mensagens.append({"quem": "user", "texto": item["content"]})
         elif item["role"] == "assistant":
@@ -209,17 +225,18 @@ def obter_historico():
             mensagens.append({"quem": "bot", "texto": texto})
     return jsonify({"mensagens": mensagens})
 
+
 @app.route("/reset", methods=["POST"])
 def reset():
-    global historico_local
-    try:
-        supabase.table("historico_grokzao").delete().neq("role", "system").execute()
-    except Exception as e:
-        print(f"Erro ao limpar banco de dados: {e}")
-    historico_local = []
+    global estado
+    estado = estado_padrao()
+    salvar_estado()
     return jsonify({"ok": True})
+
 
 if __name__ == "__main__":
     porta = int(os.environ.get("PORT", 5000))
-    print("🤖 GrokZão com Memória Ativa Rodando!")
+    print("🤖 GrokZão rodando!")
+    print(f"   No mesmo dispositivo: http://localhost:{porta}")
+    print(f"   De outro dispositivo na mesma rede Wi-Fi: http://SEU_IP_LOCAL:{porta}")
     app.run(host="0.0.0.0", port=porta, debug=False)
