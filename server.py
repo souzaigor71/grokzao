@@ -32,7 +32,7 @@ HISTORICO_PATH = os.path.join(os.path.dirname(__file__), "historico.json")
 SYSTEM_PROMPT = (
     "Você é GrokZão, um robô humanoide brasileiro descontraído, sarcástico e inteligente. "
     "Fala naturalmente, como se estivesse conversando de verdade, sem parecer um assistente formal.\n\n"
-    "Responda SEMPRE em JSON puro, sem markdown e sem texto fora do JSON, exatamente neste formato:\n"
+    "Responda SEMPRE in JSON puro, sem markdown e sem texto fora do JSON, exatamente neste formato:\n"
     '{"resposta": "texto da resposta em português, natural e falado", '
     '"emocao": "neutro|feliz|sarcastico|surpreso|bravo"}\n\n'
     "A emoção deve refletir o tom real da resposta que você deu."
@@ -44,7 +44,6 @@ def carregar_historico():
             with open(HISTORICO_PATH, "r", encoding="utf-8") as f:
                 dados = json.load(f)
                 if isinstance(dados, list) and dados:
-                    # Garante que o prompt do sistema inicial está correto
                     if dados[0]["role"] != "system":
                         dados.insert(0, {"role": "system", "content": SYSTEM_PROMPT})
                     return dados
@@ -88,9 +87,8 @@ def obter_resposta(texto_usuario: str):
     global historico
     historico.append({"role": "user", "content": texto_usuario})
 
-    # Mantém a memória ILIMITADA no arquivo, mas envia as últimas 40 mensagens 
-    # para a API não estourar o limite de contexto do modelo.
-    # O histórico completo continua salvo e intocado no arquivo JSON.
+    # Mantém a memória ILIMITADA no arquivo local, mas envia as últimas 40 mensagens 
+    # para a API não estourar o limite de contexto do modelo do Groq.
     if len(historico) > 41:
         mensagens_enviar = [historico[0]] + historico[-40:]
     else:
@@ -116,8 +114,6 @@ def obter_resposta(texto_usuario: str):
         emocao = "neutro"
 
     historico.append({"role": "assistant", "content": bruto})
-
-    # REMOVIDO o corte drástico do histórico global. Agora ele cresce indefinidamente.
     salvar_historico()
     return resposta, emocao
 
@@ -172,7 +168,7 @@ def obter_historico():
             except json.JSONDecodeError:
                 texto = item["content"]
             mensagens.append({"quem": "bot", "texto": texto})
-    return jsonify({"mensagens": mensagens})
+    return jsonify({"mensagens": messages})
 
 
 @app.route("/reset", methods=["POST"])
@@ -186,24 +182,4 @@ def reset():
 if __name__ == "__main__":
     porta = int(os.environ.get("PORT", 5000))
     print("🤖 GrokZão rodando!")
-    print(f"   No mesmo dispositivo: http://localhost:{porta}")
-    print(f"   De outro dispositivo na mesma rede Wi-Fi: http://SEU_IP_LOCAL:{porta}")
-    app.run(host="0.0.0.0", port=porta, debug=False) texto = item["content"]
-            mensagens.append({"quem": "bot", "texto": texto})
-    return jsonify({"mensagens": mensagens})
-
-
-@app.route("/reset", methods=["POST"])
-def reset():
-    global historico
-    historico = [{"role": "system", "content": SYSTEM_PROMPT}]
-    salvar_historico()
-    return jsonify({"ok": True})
-
-
-if __name__ == "__main__":
-    porta = int(os.environ.get("PORT", 5000))
-    print("🤖 GrokZão rodando!")
-    print(f"   No mesmo dispositivo: http://localhost:{porta}")
-    print(f"   De outro dispositivo na mesma rede Wi-Fi: http://SEU_IP_LOCAL:{porta}")
     app.run(host="0.0.0.0", port=porta, debug=False)
