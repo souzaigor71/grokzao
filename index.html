@@ -5,6 +5,416 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GrokZão</title>
 <style>
-  :root{\n    --skin:#ffe0c7;\n    --skin-shadow:#f5c9a8;\n    --hair:#2b2b3a;\n    --hair-light:#3e3e55;\n    --accent:#7c5cff;\n    --bg1:#0f0c29;\n    --bg2:#302b63;\n    --bg3:#24243e;\n    --brow-color:#2b2b3a;\n    --mouth-color:#c9425f;\n    --panel:#161328cc;\n  }\n  *{box-sizing:border-box;}\n  body{\n    margin:0;\n    min-height:100vh;\n    font-family:'Segoe UI',Roboto,sans-serif;\n    background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));\n    display:flex;\n    flex-direction:column;\n    align-items:center;\n    color:#f0eefc;\n    padding:20px;\n  }\n  h1{\n    margin:6px 0 18px;\n    font-size:1.6rem;\n    letter-spacing:1px;\n    color:#fff;\n    text-shadow:0 2px 10px rgba(0,0,0,0.5);\n  }\n  .container{\n    display:flex;\n    flex-direction:row;\n    gap:30px;\n    max-width:1100px;\n    width:100%;\n    align-items:flex-start;\n    justify-content:center;\n  }\n  @media(max-width:850px){\n    .container{flex-direction:column; align-items:center;}\n  }\n  .avatar-box{\n    background:var(--panel);\n    border:2px solid rgba(255,255,255,0.1);\n    border-radius:24px;\n    padding:30px;\n    display:flex;\n    flex-direction:column;\n    align-items:center;\n    box-shadow:0 20px 40px rgba(0,0,0,0.4);\n    backdrop-filter:blur(10px);\n    position:relative;\n  }\n  .stage{\n    width:300px;\n    height:300px;\n    position:relative;\n    background:rgba(0,0,0,0.2);\n    border-radius:50%;\n    overflow:hidden;\n    border:4px solid var(--accent);\n    box-shadow:inset 0 0 20px rgba(0,0,0,0.6);\n  }\n  .head{\n    position:absolute;\n    top:65px;\n    left:65px;\n    width:170px;\n    height:190px;\n    background:var(--skin);\n    border-radius:85px 85px 95px 95px;\n    box-shadow:inset 0 -15px 0 var(--skin-shadow);\n  }\n  .hair-back{\n    position:absolute;\n    top:40px;\n    left:50px;\n    width:200px;\n    height:180px;\n    background:var(--hair);\n    border-radius:90px 90px 40px 40px;\n  }\n  .hair-top{\n    position:absolute;\n    top:-15px;\n    left:-10px;\n    width:190px;\n    height:90px;\n    background:var(--hair);\n    border-radius:90px 90px 0 40px;\n  }\n  .hair-top::after{\n    content:'';\n    position:absolute;\n    right:-5px;\n    top:20px;\n    width:50px;\n    height:50px;\n    background:var(--hair-light);\n    border-radius:50%;\n  }\n  .fringe{\n    position:absolute;\n    top:0;\n    left:20px;\n    width:0;\n    height:0;\n    border-left:25px solid transparent;\n    border-right:25px solid transparent;\n    border-top:40px solid var(--hair);\n  }\n  .fringe-2{\n    position:absolute;\n    top:0;\n    left:65px;\n    width:0;\n    height:0;\n    border-left:30px solid transparent;\n    border-right:20px solid transparent;\n    border-top:45px solid var(--hair);\n  }\n  .fringe-3{\n    position:absolute;\n    top:0;\n    left:105px;\n    width:0;\n    height:0;\n    border-left:15px solid transparent;\n    border-right:30px solid transparent;\n    border-top:38px solid var(--hair);\n  }\n  .brows{\n    position:absolute;\n    top:55px;\n    left:0;\n    width:100%;\n    display:flex;\n    justify-content:space-around;\n    padding:0 22px;\n    transition:transform 0.2s ease;\n  }\n  .brow{\n    width:38px;\n    height:7px;\n    background:var(--brow-color);\n    border-radius:4px;\n    transition:all 0.2s ease;\n  }\n  .eyes{\n    position:absolute;\n    top:72px;\n    left:0;\n    width:100%;\n    display:flex;\n    justify-content:space-around;\n    padding:0 25px;\n  }\n  .eye-container{\n    width:36px;\n    height:36px;\n    background:#fff;\n    border-radius:50%;\n    display:flex;\n    align-items:center;\n    justify-content:center;\n    position:relative;\n    box-shadow:0 3px 5px rgba(0,0,0,0.15);\n    transition:height 0.1s linear, top 0.1s linear;\n  }\n  .pupil{\n    width:16px;\n    height:16px;\n    background:#111;\n    border-radius:50%;\n    position:relative;\n    transition:all 0.2s ease;\n  }\n  .pupil::after{\n    content:'';\n    position:absolute;\n    top:2px;\n    left:2px;\n    width:5px;\n    height:5px;\n    background:#fff;\n    border-radius:50%;\n  }\n  .nose{\n    position:absolute;\n    top:108px;\n    left:77px;\n    width:16px;\n    height:18px;\n    background:var(--skin-shadow);\n    border-radius:8px;\n  }\n  .mouth-wrap{\n    position:absolute;\n    top:132px;\n    left:0;\n    width:100%;\n    display:flex;\n    justify-content:center;\n  }\n  .mouth{\n    width:40px;\n    height:14px;\n    background:var(--mouth-color);\n    border-radius:3px 3px 20px 20px;\n    transition:all 0.1s ease;\n    box-shadow:inset 0 2px 4px rgba(0,0,0,0.3);\n  }\n  .chat-box{\n    flex:1;\n    background:var(--panel);\n    border:2px solid rgba(255,255,255,0.1);\n    border-radius:24px;\n    height:500px;\n    display:flex;\n    flex-direction:column;\n    box-shadow:0 20px 40px rgba(0,0,0,0.4);\n    backdrop-filter:blur(10px);\n    width:100%;\n    max-width:550px;\n  }\n  .chat-log{\n    flex:1;\n    overflow-y:auto;\n    padding:20px;\n    display:flex;\n    flex-direction:column;\n    gap:14px;\n  }\n  .msg{\n    max-width:80%;\n    padding:12px 16px;\n    border-radius:18px;\n    line-height:1.4;\n    font-size:0.95rem;\n    word-wrap:break-word;\n    animation:fadeIn 0.3s ease forwards;\n  }\n  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }\n  .msg.user{\n    background:var(--accent);\n    color:#fff;\n    align-self:flex-end;\n    border-bottom-right-radius:4px;\n    box-shadow:0 4px 12px rgba(124,92,255,0.3);\n  }\n  .msg.bot{\n    background:rgba(255,255,255,0.1);\n    color:#f0eefc;\n    align-self:flex-start;\n    border-bottom-left-radius:4px;\n    border:1px solid rgba(255,255,255,0.05);\n  }\n  .chat-input-area{\n    padding:15px 20px 20px;\n    display:flex;\n    gap:10px;\n    border-top:1px solid rgba(255,255,255,0.08);\n  }\n  .chat-input-area input{\n    flex:1;\n    background:rgba(0,0,0,0.25);\n    border:1px solid rgba(255,255,255,0.15);\n    border-radius:12px;\n    padding:12px 16px;\n    color:#fff;\n    font-size:0.95rem;\n    outline:none;\n    transition:border-color 0.2s;\n  }\n  .chat-input-area input:focus{border-color:var(--accent);}\n  .chat-input-area button{\n    background:var(--accent);\n    border:none;\n    color:#fff;\n    padding:0 22px;\n    border-radius:12px;\n    font-weight:600;\n    cursor:pointer;\n    transition:background 0.2s, transform 0.1s;\n  }\n  .chat-input-area button:hover{background:#6745ec;}\n  .chat-input-area button:active{transform:scale(0.96);}\n  .chat-input-area button:disabled{background:#444; color:#888; cursor:not-allowed;}\n  .status-text{\n    font-size:0.85rem;\n    color:rgba(255,255,255,0.4);\n    text-align:center;\n    margin-top:2px;\n    height:16px;\n  }\n  .control-panel{\n    margin-top:15px;\n    width:100%;\n    display:flex;\n    justify-content:center;\n  }\n  .reset-btn{\n    background:transparent;\n    border:1px solid rgba(255,68,68,0.4);\n    color:rgba(255,68,68,0.8);\n    padding:6px 14px;\n    border-radius:8px;\n    font-size:0.8rem;\n    cursor:pointer;\n    transition:all 0.2s;\n  }\n  .reset-btn:hover{\n    background:rgba(255,68,68,0.1);\n    border-color:rgba(255,68,68,0.8);\n  }\n</style>\n</head>\n<body>\n\n<h1>GROKZÃO AVATAR</h1>\n\n<div class="container">\n  <div class="avatar-box">\n    <div class="hair-back"></div>\n    <div class="stage">\n      <div class="head">\n        <div class="hair-top"></div>\n        <div class="fringe"></div>\n        <div class="fringe-2"></div>\n        <div class="fringe-3"></div>\n        <div class="brows">\n          <div id="browL" class="brow"></div>\n          <div id="browR" class="brow"></div>\n        </div>\n        <div class="eyes">\n          <div id="eyeL" class="eye-container"><div class="pupil"></div></div>\n          <div id="eyeR" class="eye-container"><div class="pupil"></div></div>\n        </div>\n        <div class="nose"></div>\n        <div class="mouth-wrap">\n          <div id="mouthEl" class="mouth"></div>\n        </div>\n      </div>\n    </div>\n    <div class="status-text" id="statusEl"></div>\n    <div class="control-panel">\n       <button class="reset-btn" id="resetBtn">Limpar Memória Permanente</button>\n    </div>\n  </div>\n\n  <div class="chat-box">\n    <div class="chat-log" id="chatLog"></div>\n    <div class="chat-input-area">\n      <input type="text" id="chatInput" placeholder="Mande a real pro GrokZão..." autocomplete="off">\n      <button id="sendBtn">Enviar</button>\n    </div>\n  </div>\n</div>\n\n<script>\nconst log = document.getElementById('chatLog');\nconst input = document.getElementById('chatInput');\nconst sendBtn = document.getElementById('sendBtn');\nconst statusEl = document.getElementById('statusEl');\nconst resetBtn = document.getElementById('resetBtn');\n\nconst mouthEl = document.getElementById('mouthEl');\nconst browL = document.getElementById('browL');\nconst browR = document.getElementById('browR');\nconst eyeL = document.getElementById('eyeL');\nconst eyeR = document.getElementById('eyeR');\n\nconst player = new Audio();\nlet audioCtx, analyser, dataArray, sourceNode, animationId;\nlet lipSyncActive = false;\n\nfunction setEmocao(emocao){\n  browL.style.transform = 'none';\n  browR.style.transform = 'none';\n  eyeL.querySelector('.pupil').style.transform = 'none';\n  eyeR.querySelector('.pupil').style.transform = 'none';\n  mouthEl.style.borderRadius = '3px 3px 20px 20px';\n  mouthEl.style.height = '14px';\n  mouthEl.style.width = '40px';\n\n  if(emocao === 'feliz'){\n    browL.style.transform = 'translateY(-4px) rotate(5deg)';\n    browR.style.transform = 'translateY(-4px) rotate(-5deg)';\n    mouthEl.style.borderRadius = '3px 3px 30px 30px';\n    mouthEl.style.height = '18px';\n  } else if(emocao === 'sarcastico'){\n    browL.style.transform = 'translateY(-3px) rotate(-10deg)';\n    browR.style.transform = 'translateY(-5px) rotate(-5deg)';\n    eyeL.querySelector('.pupil').style.transform = 'translate(3px, -2px)';\n  } else if(emocao === 'surpreso'){\n    browL.style.transform = 'translateY(-8px)';\n    browR.style.transform = 'translateY(-8px)';\n    mouthEl.style.borderRadius = '50%';\n    mouthEl.style.height = '22px';\n    mouthEl.style.width = '24px';\n  } else if(emocao === 'bravo'){\n    browL.style.transform = 'translateY(3px) rotate(-12deg)';\n    browR.style.transform = 'translateY(3px) rotate(12deg)';\n    mouthEl.style.borderRadius = '20px 20px 3px 3px';\n    mouthEl.style.height = '10px';\n  }\n}\n\nfunction piscar(){\n  if (lipSyncActive) {\n     setTimeout(piscar, Math.random() * 3000 + 1500);\n     return;\n  }\n  eyeL.style.height = '2px';\n  eyeL.style.top = '17px';\n  eyeR.style.height = '2px';\n  eyeR.style.top = '17px';\n  setTimeout(()=>{\n    eyeL.style.height = '36px';\n    eyeL.style.top = '0';\n    eyeR.style.height = '36px';\n    eyeR.style.top = '0';\n  }, 120);\n  setTimeout(piscar, Math.random() * 4000 + 2000);\n}\nsetTimeout(piscar, 2000);\n\nfunction iniciarAudioGraph(){\n  if (audioCtx) return;\n  audioCtx = new (window.AudioContext || window.webkitAudioContext)();\n  analyser = audioCtx.createAnalyser();\n  analyser.fftSize = 64;\n  dataArray = new Uint8Array(analyser.frequencyBinCount);\n  sourceNode = audioCtx.createMediaElementSource(player);\n  sourceNode.connect(analyser);\n  analyser.connect(audioCtx.destination);\n}\n\nfunction updateLipSync(){\n  if(!lipSyncActive) return;\n  animationId = requestAnimationFrame(updateLipSync);\n  analyser.getByteFrequencyData(dataArray);\n  let sum = 0;\n  for(let i=0; i<dataArray.length; i++){\n    sum += dataArray[i];\n  }\n  let avg = sum / dataArray.length;\n  let openHeight = 10 + (avg * 0.4);\n  if(openHeight > 45) openHeight = 45;\n  mouthEl.style.height = openHeight + 'px';\n  if(avg > 15){\n     mouthEl.style.borderRadius = '50%';\n     mouthEl.style.width = (35 + (avg*0.1)) + 'px';\n  } else {\n     mouthEl.style.borderRadius = '3px 3px 20px 20px';\n     mouthEl.style.width = '40px';\n  }\n}\n\nplayer.addEventListener('play', ()=>{\n  lipSyncActive = true;\n  updateLipSync();\n});\nplayer.addEventListener('ended', ()=>{\n  lipSyncActive = false;\n  cancelAnimationFrame(animationId);\n  mouthEl.style.height = '14px';\n  mouthEl.style.borderRadius = '3px 3px 20px 20px';\n  mouthEl.style.width = '40px';\n});\nplayer.addEventListener('pause', ()=>{\n  lipSyncActive = false;\n});\n\nfunction addMsg(texto, quem){\n  const div = document.createElement('div');\n  div.classList.add('msg', quem);\n  div.textContent = texto;\n  log.appendChild(div); \n  log.scrollTop = log.scrollHeight;\n}\n\nasync function enviar(){\n  const texto = input.value.trim();\n  if (!texto) return;\n  input.value = '';\n  addMsg(texto, 'user');\n  sendBtn.disabled = true;\n  statusEl.textContent = 'GrokZão está pensando...';\n\n  try{\n    const resp = await fetch('/chat', {\n      method:'POST',\n      headers:{'Content-Type':'application/json'},\n      body: JSON.stringify({mensagem: texto})\n    });\n    const dados = await resp.json();\n\n    if (dados.erro){\n      addMsg('Erro: ' + dados.erro, 'bot');\n      statusEl.textContent = '';\n      sendBtn.disabled = false;\n      return;\n    }\n\n    addMsg(dados.resposta, 'bot');\n    setEmocao(dados.emocao);\n    statusEl.textContent = '';\n\n    if (dados.audio_url){\n      iniciarAudioGraph();\n      player.src = dados.audio_url + '?t=' + Date.now();\n      await player.play();\n    }\n  }catch(e){\n    addMsg('Erro de conexão com o servidor.', 'bot');\n    statusEl.textContent = '';\n  }finally{\n    sendBtn.disabled = false;\n  }\n}\n\sendBtn.addEventListener('click', enviar);\ninput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') enviar(); });\n\n// ---------- Carregar histórico salvo ao abrir a página ----------\nasync function carregarHistorico(){\n  try{\n    log.innerHTML = ''; // Limpa o painel antes de reconstruir a linha do tempo\n    const resp = await fetch('/historico');\n    const dados = await resp.json();\n    if(dados && dados.mensagens){\n      dados.mensagens.forEach(m => {\n        addMsg(m.texto, m.quem);\n      });\n    }\n  }catch(e){\n    console.error('Erro ao carregar histórico estável:', e);\n  }\n}\n\nresetBtn.addEventListener('click', async () => {\n  if(!confirm('Deseja mesmo limpar a memória permanente do robô?')) return;\n  try{\n    await fetch('/reset', {method:'POST'});\n    log.innerHTML = '';\n  }catch(e){}\n});\n\n// Executa a carga inicial assim que a janela abre ou atualiza\nwindow.addEventListener('DOMContentLoaded', carregarHistorico);\n</script>\n</body>\n</html>\n```
+  :root{
+    --skin:#ffe0c7;
+    --skin-shadow:#f5c9a8;
+    --hair:#2b2b3a;
+    --hair-light:#3e3e55;
+    --accent:#7c5cff;
+    --bg1:#0f0c29;
+    --bg2:#302b63;
+    --bg3:#24243e;
+    --brow-color:#2b2b3a;
+    --mouth-color:#c9425f;
+    --panel:#161328cc;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI',Roboto,sans-serif;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    color:#f0eefc;
+    padding:20px;
+  }
+  h1{
+    margin:6px 0 18px;
+    font-size:1.6rem;
+    letter-spacing:1px;
+    color:#fff;
+    text-shadow:0 0 12px var(--accent);
+  }
+  .stage{
+    width:260px;
+    height:300px;
+    position:relative;
+    filter:drop-shadow(0 10px 25px rgba(0,0,0,0.5));
+  }
+  .face-wrap{
+    width:100%;
+    height:100%;
+    position:relative;
+    transition:transform .25s ease;
+  }
+  .idle{
+    animation:bob 3.4s ease-in-out infinite;
+  }
+  @keyframes bob{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-6px);}
+  }
+  .face{
+    width:210px;
+    height:230px;
+    background:radial-gradient(circle at 35% 30%, var(--skin), var(--skin-shadow));
+    border-radius:48% 48% 44% 44% / 52% 52% 40% 40%;
+    position:absolute;
+    left:25px;
+    top:45px;
+    box-shadow:inset 0 -14px 30px rgba(0,0,0,0.08);
+  }
+  .hair{
+    position:absolute;
+    left:8px;
+    top:0px;
+    width:244px;
+    height:150px;
+    background:linear-gradient(160deg,var(--hair-light),var(--hair));
+    border-radius:50% 50% 30% 30% / 60% 60% 25% 25%;
+    z-index:2;
+  }
+  .hair::before, .hair::after{
+    content:'';
+    position:absolute;
+    top:70px;
+    width:34px;
+    height:110px;
+    background:linear-gradient(160deg,var(--hair-light),var(--hair));
+    border-radius:0 0 50% 50%;
+  }
+  .hair::before{ left:-6px; transform:rotate(8deg);}
+  .hair::after{ right:-6px; transform:rotate(-8deg);}
 
-Suba essas alterações para o seu repositório Git. Agora, ao atualizar ou fechar o navegador, o chat vai carregar visualmente toda a conversa anterior armazenada no Supabase e, quando o usuário disser *"Lembra quando falamos sobre X?"*, o robô consultará as memórias semânticas com perfeição!
+  .cheek{
+    position:absolute;
+    width:26px;height:14px;
+    background:#ff9fae;
+    border-radius:50%;
+    opacity:.55;
+    top:168px;
+    filter:blur(1px);
+    z-index:3;
+  }
+  .cheek.l{left:52px;}
+  .cheek.r{right:52px;}
+
+  .eye{
+    position:absolute;
+    top:118px;
+    width:34px;
+    height:34px;
+    background:#fff;
+    border-radius:50%;
+    box-shadow:0 2px 6px rgba(0,0,0,.15) inset;
+    overflow:hidden;
+    z-index:4;
+    transition:transform .08s ease;
+  }
+  .eye.l{left:60px;}
+  .eye.r{right:60px;}
+  .pupil{
+    position:absolute;
+    width:18px;height:18px;
+    background:radial-gradient(circle at 35% 30%, #6a4cff, #241a5c);
+    border-radius:50%;
+    top:8px;left:8px;
+  }
+  .pupil::after{
+    content:'';
+    position:absolute;
+    width:6px;height:6px;
+    background:#fff;
+    border-radius:50%;
+    top:2px;left:3px;
+    opacity:.9;
+  }
+  .blink .eye{ transform:scaleY(0.06); }
+
+  .brow{
+    position:absolute;
+    top:100px;
+    width:34px;
+    height:6px;
+    background:var(--brow-color);
+    border-radius:6px;
+    z-index:5;
+    transition:transform .2s ease, top .2s ease;
+  }
+  .brow.l{left:58px;}
+  .brow.r{right:58px;}
+
+  .mouth-holder{
+    position:absolute;
+    left:50%;
+    top:186px;
+    transform:translateX(-50%);
+    width:60px;
+    height:26px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:4;
+  }
+  .mouth{
+    width:46px;
+    height:6px;
+    background:var(--mouth-color);
+    border-radius:0 0 14px 14px;
+    transition:height .06s linear, border-radius .15s ease, transform .2s ease, width .2s ease;
+  }
+
+  /* Expressões */
+  .feliz .brow{ top:96px; transform:rotate(0deg); }
+  .feliz .mouth{ border-radius:0 0 20px 20px; background:#c9425f; }
+
+  .sarcastico .brow.l{ top:92px; transform:rotate(-14deg); }
+  .sarcastico .brow.r{ top:104px; transform:rotate(6deg); }
+  .sarcastico .mouth{ border-radius:0 14px 14px 0; transform:translateX(6px) rotate(-8deg); }
+
+  .surpreso .brow{ top:88px; }
+  .surpreso .eye{ transform:scale(1.15); }
+  .surpreso .mouth{ border-radius:50%; width:24px; }
+
+  .bravo .brow.l{ top:98px; transform:rotate(18deg); }
+  .bravo .brow.r{ top:98px; transform:rotate(-18deg); }
+  .bravo .mouth{ background:#a52c44; border-radius:14px 14px 0 0; transform:translateY(4px); }
+
+  .panel{
+    margin-top:18px;
+    width:100%;
+    max-width:520px;
+    background:var(--panel);
+    border-radius:16px;
+    padding:14px;
+    backdrop-filter:blur(6px);
+    box-shadow:0 8px 24px rgba(0,0,0,.35);
+  }
+  .log{
+    max-height:220px;
+    overflow-y:auto;
+    padding:6px 4px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .msg{
+    padding:8px 12px;
+    border-radius:12px;
+    max-width:85%;
+    font-size:.92rem;
+    line-height:1.35;
+  }
+  .msg.user{
+    align-self:flex-end;
+    background:var(--accent);
+    color:#fff;
+    border-bottom-right-radius:2px;
+  }
+  .msg.bot{
+    align-self:flex-start;
+    background:#2c2850;
+    color:#eee;
+    border-bottom-left-radius:2px;
+  }
+  .row{
+    display:flex;
+    gap:8px;
+  }
+  input[type=text]{
+    flex:1;
+    padding:11px 14px;
+    border-radius:10px;
+    border:none;
+    background:#231f3f;
+    color:#fff;
+    font-size:.95rem;
+    outline:none;
+  }
+  input[type=text]::placeholder{ color:#9a93c9; }
+  button{
+    padding:11px 18px;
+    border:none;
+    border-radius:10px;
+    background:var(--accent);
+    color:#fff;
+    font-weight:600;
+    cursor:pointer;
+    transition:filter .15s ease;
+  }
+  button:hover{ filter:brightness(1.15); }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  .status{
+    font-size:.78rem;
+    color:#b6aee6;
+    min-height:16px;
+    margin-top:6px;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<h1>🤖 GrokZão</h1>
+
+<div class="stage">
+  <div class="face-wrap idle" id="faceWrap">
+    <div class="hair"></div>
+    <div class="face" id="face">
+      <div class="brow l"></div>
+      <div class="brow r"></div>
+      <div class="eye l"><div class="pupil"></div></div>
+      <div class="eye r"><div class="pupil"></div></div>
+      <div class="cheek l"></div>
+      <div class="cheek r"></div>
+      <div class="mouth-holder"><div class="mouth" id="mouth"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="log" id="log"></div>
+  <div class="row">
+    <input type="text" id="input" placeholder="Fala com o GrokZão..." autocomplete="off">
+    <button id="sendBtn">Enviar</button>
+  </div>
+  <div class="status" id="status"></div>
+</div>
+
+<audio id="player" style="display:none"></audio>
+
+<script>
+const face = document.getElementById('face');
+const mouth = document.getElementById('mouth');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const log = document.getElementById('log');
+const statusEl = document.getElementById('status');
+const player = document.getElementById('player');
+
+// ---------- Piscar os olhos periodicamente ----------
+function agendarPiscada(){
+  const delay = 2000 + Math.random()*3500;
+  setTimeout(()=>{
+    face.classList.add('blink');
+    setTimeout(()=>face.classList.remove('blink'), 140);
+    agendarPiscada();
+  }, delay);
+}
+agendarPiscada();
+
+// ---------- Web Audio API para lip-sync em tempo real ----------
+let audioCtx, analyser, sourceNode, dataArray, rafId;
+
+function iniciarAudioGraph(){
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  sourceNode = audioCtx.createMediaElementSource(player);
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  dataArray = new Uint8Array(analyser.frequencyBinCount);
+  sourceNode.connect(analyser);
+  analyser.connect(audioCtx.destination);
+}
+
+function animarBoca(){
+  analyser.getByteFrequencyData(dataArray);
+  let soma = 0;
+  for (let i=0;i<dataArray.length;i++) soma += dataArray[i];
+  const media = soma / dataArray.length;
+  const altura = Math.min(30, 6 + media*0.5);
+  mouth.style.height = altura + 'px';
+  rafId = requestAnimationFrame(animarBoca);
+}
+
+player.addEventListener('play', ()=>{
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  animarBoca();
+});
+player.addEventListener('pause', pararAnimacaoBoca);
+player.addEventListener('ended', pararAnimacaoBoca);
+
+function pararAnimacaoBoca(){
+  if (rafId) cancelAnimationFrame(rafId);
+  mouth.style.height = '6px';
+}
+
+// ---------- Expressões ----------
+function setEmocao(emocao){
+  face.classList.remove('neutro','feliz','sarcastico','surpreso','bravo');
+  face.classList.add(emocao || 'neutro');
+}
+
+// ---------- Chat ----------
+function addMsg(texto, quem){
+  const div = document.createElement('div');
+  div.className = 'msg ' + quem;
+  div.textContent = texto;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function enviar(){
+  const texto = input.value.trim();
+  if (!texto) return;
+  input.value = '';
+  addMsg(texto, 'user');
+  sendBtn.disabled = true;
+  statusEl.textContent = 'GrokZão está pensando...';
+
+  try{
+    const resp = await fetch('/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({mensagem: texto})
+    });
+    const dados = await resp.json();
+
+    if (dados.erro){
+      addMsg('Erro: ' + dados.erro, 'bot');
+      statusEl.textContent = '';
+      sendBtn.disabled = false;
+      return;
+    }
+
+    addMsg(dados.resposta, 'bot');
+    setEmocao(dados.emocao);
+    statusEl.textContent = '';
+
+    if (dados.audio_url){
+      iniciarAudioGraph();
+      player.src = dados.audio_url + '?t=' + Date.now();
+      await player.play();
+    }
+  }catch(e){
+    addMsg('Erro de conexão com o servidor.', 'bot');
+    statusEl.textContent = '';
+  }finally{
+    sendBtn.disabled = false;
+  }
+}
+
+sendBtn.addEventListener('click', enviar);
+input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') enviar(); });
+
+// ---------- Carregar histórico salvo ao abrir a página ----------
+async function carregarHistorico(){
+  try{
+    const resp = await fetch('/historico');
+    const dados = await resp.json();
+    if(dados && dados.mensagens){
+      log.innerHTML = '';
+      dados.mensagens.forEach(m => addMsg(m.texto, m.quem));
+    }
+  }catch(e){
+    console.warn('Não foi possível carregar o histórico salvo.');
+  }
+}
+window.addEventListener('DOMContentLoaded', carregarHistorico);
+</script>
+
+</body>
+</html>
