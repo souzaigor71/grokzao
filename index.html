@@ -298,7 +298,7 @@ const micBtn = document.getElementById('micBtn');
 const vozStatus = document.getElementById('vozStatus');
 const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-const PALAVRAS_ATIVACAO = ['grokzão', 'grokzao', 'grog zão', 'grock zão', 'grock zao', 'grok zão', 'grok zao'];
+const PALAVRAS_ATIVACAO = ['alien', 'éilien', 'eilien', 'ariem', 'álien'];
 
 let escutaAtiva = false;
 let recognition = null;
@@ -378,7 +378,7 @@ function ativarEscuta(){
   }
   escutaAtiva = true;
   micBtn.classList.add('ativo');
-  vozStatus.textContent = '🎤 Escutando... diga "GrokZão" pra ativar';
+  vozStatus.textContent = '🎤 Escutando... diga "Alien" pra ativar';
   recognition = criarRecognition();
   try { recognition.start(); } catch(e){}
 }
