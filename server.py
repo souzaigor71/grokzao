@@ -3,7 +3,7 @@ import json
 import time
 import asyncio
 import requests
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 
 from groq import Groq
 import edge_tts
@@ -253,6 +253,11 @@ def chat():
         "emocao": emocao,
         "audio_url": audio_url,
     })
+
+
+@app.route("/avatar.jpg")
+def avatar():
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "avatar.jpg")
 
 
 @app.route("/historico", methods=["GET"])
