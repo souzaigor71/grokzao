@@ -260,6 +260,21 @@ def avatar():
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "avatar.jpg")
 
 
+@app.route("/manifest.json")
+def manifest():
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "manifest.json")
+
+
+@app.route("/icon-192.png")
+def icon_192():
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "icon-192.png")
+
+
+@app.route("/icon-512.png")
+def icon_512():
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "icon-512.png")
+
+
 @app.route("/historico", methods=["GET"])
 def obter_historico():
     mensagens = []
