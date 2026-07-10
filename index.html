@@ -3,359 +3,248 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GrokZão - Telemetria Alienígena</title>
+<title>GrokZão</title>
 <style>
-  :root {
-    --accent: #00ff66;
-    --bg-dark: #020204;
-    --radar-green: #00ff55;
-    --glow-neutro: #00ff66;
-    --glow-feliz: #00ffcc;
-    --glow-sarcastico: #8a2be2;
-    --glow-surpreso: #00ffff;
-    --glow-bravo: #ff003c;
+  :root{
+    --accent:#7c5cff;
+    --bg1:#0f0c29;
+    --bg2:#302b63;
+    --bg3:#24243e;
+    --panel:#161328cc;
+    --glow-neutro:#39e6c9;
+    --glow-feliz:#39e67a;
+    --glow-sarcastico:#b463ff;
+    --glow-surpreso:#39c9e6;
+    --glow-bravo:#ff3d5a;
   }
-  
-  * { box-sizing: border-box; }
-  
-  body {
-    margin: 0;
-    min-height: 100vh;
-    font-family: 'Courier New', Courier, monospace;
-    background-color: var(--bg-dark);
-    background-image: 
-      radial-gradient(circle at 50% 30%, #0c1a10 0%, transparent 70%),
-      linear-gradient(rgba(0, 255, 85, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 255, 85, 0.03) 1px, transparent 1px);
-    background-size: 100% 100%, 20px 20px, 20px 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: #a3ffd0;
-    padding: 20px;
-    overflow-x: hidden;
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Segoe UI',Roboto,sans-serif;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    color:#f0eefc;
+    padding:20px;
   }
-
-  h1 {
-    margin: 5px 0 15px;
-    font-size: 1.4rem;
-    letter-spacing: 4px;
-    color: #fff;
-    text-shadow: 0 0 10px var(--radar-green);
-    font-weight: bold;
-    text-align: center;
+  h1{
+    margin:6px 0 18px;
+    font-size:1.6rem;
+    letter-spacing:1px;
+    color:#fff;
+    text-shadow:0 0 12px var(--accent);
   }
 
-  /* --- CRÂNIO DO ALIENÍGENA --- */
-  .avatar-box {
-    position: relative;
-    width: 240px;
-    height: 270px;
-    background: #000000;
-    border-radius: 70% 70% 60% 60% / 50% 50% 90% 90%;
-    border: 2px solid rgba(0, 255, 85, 0.4);
-    box-shadow: 
-      0 0 35px rgba(0, 255, 85, 0.15), 
-      inset 0 0 30px rgba(0, 255, 85, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 25px;
-    transition: box-shadow 0.4s ease, border-color 0.4s ease;
+  /* ---------- Avatar (imagem) ---------- */
+  .avatar-container{
+    --glow-color:var(--glow-neutro);
+    --glow-strength:0.35;
+    width:260px;
+    height:320px;
+    border-radius:20px;
+    overflow:hidden;
+    position:relative;
+    background:#0a0918;
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--glow-color) 60%, transparent),
+      0 0 calc(20px + 40px*var(--glow-strength)) color-mix(in srgb, var(--glow-color) calc(var(--glow-strength)*100%), transparent),
+      0 14px 34px rgba(0,0,0,.55);
+    transition:box-shadow .12s linear, transform .25s ease;
+    animation:bob 3.6s ease-in-out infinite;
   }
-  
-  .rosto {
-    position: relative;
-    width: 100%;
-    height: 100%;
+  @keyframes bob{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-8px);}
   }
-  
-  /* --- OLHOS OVALADOS --- */
-  .olho {
-    position: absolute;
-    top: 90px;
-    width: 65px;
-    height: 90px;
-    background: #060608;
-    border-radius: 85% 20% 60% 55% / 60% 20% 85% 55%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0, 255, 85, 0.2);
-    box-shadow: inset 0 0 20px #000;
+  .avatar-img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
   }
-  
-  .olho.esq { left: 35px; transform: rotate(26deg); }
-  .olho.dir { right: 35px; transform: rotate(-26deg); }
-  
-  .pupila {
-    width: 8px;
-    height: 14px;
-    background: var(--radar-green);
-    border-radius: 50%;
-    box-shadow: 0 0 15px var(--radar-green), 0 0 5px #fff;
-    transition: all 0.3s ease;
-    animation: pulsarGlow 2.5s infinite ease-in-out;
+  .avatar-container.falando{
+    animation:bob 3.6s ease-in-out infinite, pulse 0.5s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ filter:brightness(1); }
+    50%{ filter:brightness(1.12); }
   }
 
-  .sobrancelha {
-    position: absolute;
-    top: 72px;
-    width: 55px;
-    height: 3px;
-    background: rgba(0, 255, 85, 0.3);
-    border-radius: 2px;
-    transition: all 0.3s ease;
-  }
-  .sobrancelha.esq { left: 35px; transform: rotate(14deg); }
-  .sobrancelha.dir { right: 35px; transform: rotate(-14deg); }
+  /* Cor do brilho por emoção */
+  .avatar-container.neutro{ --glow-color:var(--glow-neutro); }
+  .avatar-container.feliz{ --glow-color:var(--glow-feliz); }
+  .avatar-container.sarcastico{ --glow-color:var(--glow-sarcastico); }
+  .avatar-container.surpreso{ --glow-color:var(--glow-surpreso); }
+  .avatar-container.bravo{ --glow-color:var(--glow-bravo); }
 
-  .boca {
-    position: absolute;
-    bottom: 45px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 25px;
-    height: 2px;
-    background: var(--radar-green);
-    border-radius: 1px;
-    box-shadow: 0 0 10px var(--radar-green);
-    transition: all 0.1s ease;
+  /* ---------- Chat (abaixo do avatar) ---------- */
+  .painel-chat{
+    margin-top:22px;
+    width:100%;
+    max-width:420px;
+    display:flex;
+    flex-direction:column;
+    background:var(--panel);
+    border-radius:16px;
+    padding:14px;
+    backdrop-filter:blur(6px);
+    box-shadow:0 8px 24px rgba(0,0,0,.35);
   }
-
-  /* --- ANIMAÇÕES DE EXPRESSÃO --- */
-  .avatar-box.feliz { box-shadow: 0 0 45px var(--glow-feliz); border-color: var(--glow-feliz); }
-  .avatar-box.feliz .olho { height: 75px; }
-  .avatar-box.feliz .boca { height: 10px; width: 30px; border-radius: 0 0 50% 50%; }
-
-  .avatar-box.sarcastico { box-shadow: 0 0 45px var(--glow-sarcastico); border-color: var(--glow-sarcastico); }
-  .avatar-box.sarcastico .sobrancelha.esq { transform: rotate(-10deg) translateY(-4px); }
-  .avatar-box.sarcastico .boca { width: 22px; height: 3px; transform: translateX(-50%) rotate(10deg); }
-
-  .avatar-box.surpreso { box-shadow: 0 0 45px var(--glow-surpreso); border-color: var(--glow-surpreso); }
-  .avatar-box.surpreso .pupila { transform: scale(2); }
-  .avatar-box.surpreso .boca { width: 14px; height: 14px; border-radius: 50%; }
-
-  .avatar-box.bravo { box-shadow: 0 0 45px var(--glow-bravo); border-color: var(--glow-bravo); }
-  .avatar-box.bravo .sobrancelha.esq { transform: rotate(28deg) translateY(7px); }
-  .avatar-box.bravo .sobrancelha.dir { transform: rotate(-28deg) translateY(7px); }
-  .avatar-box.bravo .pupila { background: #ff003c; box-shadow: 0 0 15px #ff003c; }
-  .avatar-box.bravo .boca { width: 40px; height: 3px; }
-
-  /* --- TERMINAL DE CHAT --- */
-  .chat-panel {
-    width: 100%;
-    max-width: 550px;
-    background: rgba(0, 5, 2, 0.9);
-    border-radius: 8px;
-    border: 1px solid rgba(0, 255, 85, 0.3);
-    display: flex;
-    flex-direction: column;
-    height: 360px;
-    box-shadow: 0 0 35px rgba(0, 0, 0, 0.9), inset 0 0 15px rgba(0, 255, 85, 0.05);
+  .log{
+    max-height:280px;
+    overflow-y:auto;
+    padding:6px 4px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:10px;
   }
-  
-  .chat-log {
-    flex: 1;
-    padding: 16px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  .msg{
+    padding:8px 12px;
+    border-radius:12px;
+    max-width:85%;
+    font-size:.92rem;
+    line-height:1.35;
   }
-  
-  .msg {
-    max-width: 85%;
-    padding: 10px 14px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    line-height: 1.4;
-    word-wrap: break-word;
-    animation: fadeIn 0.2s ease forwards;
+  .msg.user{
+    align-self:flex-end;
+    background:var(--accent);
+    color:#fff;
+    border-bottom-right-radius:2px;
   }
-  
-  .msg.user {
-    background: rgba(0, 255, 85, 0.08);
-    color: #fff;
-    align-self: flex-end;
-    border: 1px solid var(--radar-green);
-    text-shadow: 0 0 4px rgba(0, 255, 85, 0.5);
+  .msg.bot{
+    align-self:flex-start;
+    background:#2c2850;
+    color:#eee;
+    border-bottom-left-radius:2px;
   }
-  
-  .msg.bot {
-    background: rgba(10, 12, 10, 0.9);
-    color: #a3ffd0;
-    align-self: flex-start;
-    border: 1px solid rgba(0, 255, 85, 0.12);
+  .row{
+    display:flex;
+    gap:8px;
   }
-  
-  .controls {
-    display: flex;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.8);
-    border-top: 1px solid rgba(0, 255, 85, 0.2);
-    gap: 8px;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
+  input[type=text]{
+    flex:1;
+    padding:11px 14px;
+    border-radius:10px;
+    border:none;
+    background:#231f3f;
+    color:#fff;
+    font-size:.95rem;
+    outline:none;
   }
-  
-  input {
-    flex: 1;
-    background: #020503;
-    border: 1px solid rgba(0, 255, 85, 0.4);
-    border-radius: 4px;
-    padding: 10px 14px;
-    color: #fff;
-    font-size: 0.88rem;
-    outline: none;
-    font-family: inherit;
+  input[type=text]::placeholder{ color:#9a93c9; }
+  button{
+    padding:11px 18px;
+    border:none;
+    border-radius:10px;
+    background:var(--accent);
+    color:#fff;
+    font-weight:600;
+    cursor:pointer;
+    transition:filter .15s ease;
   }
-  input:focus { border-color: var(--radar-green); box-shadow: 0 0 8px rgba(0, 255, 85, 0.2); }
-  
-  button {
-    background: #031408;
-    border: 1px solid var(--radar-green);
-    color: var(--radar-green);
-    padding: 0 16px;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s;
+  button:hover{ filter:brightness(1.15); }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  #micBtn{
+    background:#2c2850;
+    padding:11px 14px;
   }
-  button:hover { background: var(--radar-green); color: #000; box-shadow: 0 0 10px var(--radar-green); }
-  button:disabled { background: #020603; border-color: #222; color: #444; cursor: not-allowed; }
-
-  .mic-btn {
-    background: #020503;
-    border: 1px solid rgba(0, 255, 85, 0.4);
-    padding: 0 14px;
-    font-size: 1.05rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  #micBtn.ativo{
+    background:#e63946;
+    animation:micPulse 1.2s ease-in-out infinite;
   }
-  .mic-btn.gravando {
-    background: #ff003c;
-    border-color: #ff003c;
-    color: #fff;
-    animation: interceptar 1s infinite ease-in-out;
-    box-shadow: 0 0 15px #ff003c;
+  @keyframes micPulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(230,57,70,.5); }
+    50%{ box-shadow:0 0 0 8px rgba(230,57,70,0); }
   }
-
-  .status-bar {
-    width: 100%;
-    max-width: 550px;
-    padding: 8px;
-    font-size: 0.78rem;
-    color: #4b8f67;
-    text-align: center;
-    min-height: 28px;
-    letter-spacing: 1px;
+  .status{
+    font-size:.78rem;
+    color:#b6aee6;
+    min-height:16px;
+    margin-top:6px;
+    text-align:center;
   }
-
-  @keyframes fadeIn { from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
-  @keyframes pulsarGlow { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } }
-  @keyframes interceptar { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-</style> 
+</style>
 </head>
 <body>
 
-  <h1>SINAL DE QUANTUM DETECTADO: GROKZÃO</h1>
+<h1>🤖 GrokZão</h1>
 
-  <div class="avatar-box" id="avatarBox">
-    <div class="rosto">
-      <div class="sobrancelha esq"></div>
-      <div class="sobrancelha dir"></div>
-      <div class="olho esq"><div class="pupila"></div></div>
-      <div class="olho dir"><div class="pupila"></div></div>
-      <div class="boca" id="boca"></div>
-    </div>
+<div class="avatar-container neutro" id="avatarContainer">
+  <img src="/avatar.jpg" alt="GrokZão" class="avatar-img">
+</div>
+
+<div class="painel-chat">
+  <div class="log" id="log"></div>
+  <div class="row">
+    <input type="text" id="input" placeholder="Fala com o GrokZão..." autocomplete="off">
+    <button id="sendBtn">Enviar</button>
+    <button id="micBtn" title="Ativar escuta por voz">🎤</button>
   </div>
+  <div class="status" id="status"></div>
+  <div class="status" id="vozStatus"></div>
+</div>
 
-  <div class="chat-panel">
-    <div class="chat-log" id="chatLog"></div>
-    <div class="controls">
-      <input type="text" id="userInput" placeholder="Transmitir dados para o espaço..." autofocus>
-      <button type="button" class="mic-btn" id="micBtn" title="Transmitir por voz">🎤</button>
-      <button type="button" id="sendBtn">Enviar</button>
-    </div>
-  </div>
-
-  <div class="status-bar" id="statusBar"></div>
+<audio id="player" style="display:none"></audio>
 
 <script>
-const avatarBox = document.getElementById('avatarBox');
-const boca = document.getElementById('boca');
-const log = document.getElementById('chatLog');
-const input = document.getElementById('userInput');
+const avatarContainer = document.getElementById('avatarContainer');
+const input = document.getElementById('input');
 const sendBtn = document.getElementById('sendBtn');
-const micBtn = document.getElementById('micBtn');
-const statusEl = document.getElementById('statusBar');
+const log = document.getElementById('log');
+const statusEl = document.getElementById('status');
+const player = document.getElementById('player');
 
-const player = new Audio();
-player.crossOrigin = "anonymous";
-
-let audioCtx = null;
-let analyser = null;
-let source = null;
-let dataArray = null;
-let animacaoBocaId = null;
-
-function iniciarPiscar(){
-  setInterval(()=>{
-    constGrid = document.querySelectorAll('.olho');
-    constGrid.forEach(o => o.style.transform = o.classList.contains('esq') ? 'rotate(26deg) scaleY(0.02)' : 'rotate(-26deg) scaleY(0.02)');
-    setTimeout(()=>{
-      constGrid.forEach(o => o.style.transform = o.classList.contains('esq') ? 'rotate(26deg) scaleY(1)' : 'rotate(-26deg) scaleY(1)');
-    }, 100);
-  }, 3000 + Math.random() * 4000);
-}
-iniciarPiscar();
-
-function setEmocao(emocao){
-  avatarBox.className = 'avatar-box';
-  if(['feliz','sarcastico','surpreso','bravo'].includes(emocao)){
-    avatarBox.classList.add(emocao);
-  }
-}
+// ---------- Web Audio API: brilho reage ao volume da fala ----------
+let audioCtx, analyser, sourceNode, dataArray, rafId;
 
 function iniciarAudioGraph(){
-  if(!audioCtx){
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 64;
-    source = audioCtx.createMediaElementSource(player);
-    source.connect(analyser);
-    analyser.connect(audioCtx.destination);
-    dataArray = new Uint8Array(analyser.frequencyBinCount);
-  }
-  if(!animacaoBocaId) atualizarBoca();
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  sourceNode = audioCtx.createMediaElementSource(player);
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  dataArray = new Uint8Array(analyser.frequencyBinCount);
+  sourceNode.connect(analyser);
+  analyser.connect(audioCtx.destination);
 }
 
-function atualizarBoca(){
-  animacaoBocaId = requestAnimationFrame(atualizarBoca);
-  if(!analyser) return;
-  
+function animarBrilho(){
   analyser.getByteFrequencyData(dataArray);
   let soma = 0;
-  for(let i=0; i<dataArray.length; i++){
-    soma += dataArray[i];
-  }
-  let volume = soma / dataArray.length;
-
-  let alturaBase = 2;
-  let novaAltura = alturaBase + (volume * 0.22);
-  boca.style.height = `${novaAltura}px`;
+  for (let i=0;i<dataArray.length;i++) soma += dataArray[i];
+  const media = soma / dataArray.length; // 0-255
+  const intensidade = Math.min(1, 0.25 + media/140);
+  avatarContainer.style.setProperty('--glow-strength', intensidade.toFixed(2));
+  rafId = requestAnimationFrame(animarBrilho);
 }
 
-player.addEventListener('pause', () => { boca.style.height = ''; });
-player.addEventListener('ended', () => { boca.style.height = ''; });
+player.addEventListener('play', ()=>{
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  avatarContainer.classList.add('falando');
+  animarBrilho();
+});
+player.addEventListener('pause', pararBrilho);
+player.addEventListener('ended', pararBrilho);
 
+function pararBrilho(){
+  if (rafId) cancelAnimationFrame(rafId);
+  avatarContainer.classList.remove('falando');
+  avatarContainer.style.setProperty('--glow-strength', 0.35);
+}
+
+// ---------- Expressões (cor do brilho ao redor do avatar) ----------
+function setEmocao(emocao){
+  avatarContainer.classList.remove('neutro','feliz','sarcastico','surpreso','bravo');
+  avatarContainer.classList.add(emocao || 'neutro');
+}
+
+// ---------- Chat ----------
 function addMsg(texto, quem){
   const div = document.createElement('div');
-  div.className = `msg ${quem}`;
+  div.className = 'msg ' + quem;
   div.textContent = texto;
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
@@ -363,12 +252,11 @@ function addMsg(texto, quem){
 
 async function enviar(){
   const texto = input.value.trim();
-  if (!texto) return; // Corrigido a validação que causava travamento
-  
+  if (!texto) return;
   input.value = '';
   addMsg(texto, 'user');
   sendBtn.disabled = true;
-  statusEl.textContent = '>> Capturando frequências sub-espaciais...';
+  statusEl.textContent = 'GrokZão está pensando...';
 
   try{
     const resp = await fetch('/chat', {
@@ -395,7 +283,7 @@ async function enviar(){
       await player.play();
     }
   }catch(e){
-    addMsg('>> Falha na telemetria galáctica.', 'bot');
+    addMsg('Erro de conexão com o servidor.', 'bot');
     statusEl.textContent = '';
   }finally{
     sendBtn.disabled = false;
@@ -405,58 +293,128 @@ async function enviar(){
 sendBtn.addEventListener('click', enviar);
 input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') enviar(); });
 
-// --- RECONHECIMENTO DE VOZ ---
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-if (SpeechRecognition) {
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'pt-BR';
-  recognition.continuous = false;
-  recognition.interimResults = false;
+// ---------- Escuta contínua com palavra de ativação ("GrokZão") ----------
+const micBtn = document.getElementById('micBtn');
+const vozStatus = document.getElementById('vozStatus');
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  micBtn.addEventListener('click', () => {
-    if (micBtn.classList.contains('gravando')) {
-      recognition.stop();
-    } else {
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-      recognition.start();
-    }
-  });
+const PALAVRAS_ATIVACAO = ['grokzão', 'grokzao', 'grog zão', 'grock zão', 'grock zao', 'grok zão', 'grok zao'];
 
-  recognition.onstart = () => {
-    micBtn.classList.add('gravando');
-    statusEl.textContent = '>> Gravando ondas sonoras locais...';
-  };
+let escutaAtiva = false;
+let recognition = null;
+let aguardandoComando = false;
+let botoFalando = false;
 
-  recognition.onend = () => {
-    micBtn.classList.remove('gravando');
-    if (statusEl.textContent === '>> Gravando ondas sonoras locais...') statusEl.textContent = '';
-  };
-
-  recognition.onresult = (event) => {
-    const textoFalado = event.results[0][0].transcript;
-    input.value = textoFalado;
-    enviar();
-  };
-
-  recognition.onerror = (event) => {
-    console.error('Erro na gravação espacial:', event.error);
-    statusEl.textContent = '>> Sinal de voz ruidoso. Repita a transmissão.';
-    micBtn.classList.remove('gravando');
-  };
-} else {
-  micBtn.style.display = 'none';
+function normalizar(txt){
+  return txt.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 }
 
+function encontrarPalavraAtivacao(textoNormalizado){
+  for (const palavra of PALAVRAS_ATIVACAO){
+    const p = normalizar(palavra);
+    const idx = textoNormalizado.indexOf(p);
+    if (idx !== -1){
+      return idx + p.length;
+    }
+  }
+  return -1;
+}
+
+function criarRecognition(){
+  const r = new SpeechRecognitionAPI();
+  r.continuous = true;
+  r.interimResults = true;
+  r.lang = 'pt-BR';
+
+  r.onresult = (event) => {
+    if (botoFalando) return; // ignora enquanto o robô está falando
+
+    for (let i = event.resultIndex; i < event.results.length; i++){
+      const resultado = event.results[i];
+      if (!resultado.isFinal) continue;
+
+      const transcricaoOriginal = resultado[0].transcript;
+      const transcricao = normalizar(transcricaoOriginal);
+
+      if (!aguardandoComando){
+        const posAtivacao = encontrarPalavraAtivacao(transcricao);
+        if (posAtivacao !== -1){
+          const resto = transcricaoOriginal.slice(posAtivacao).trim();
+          if (resto.length > 2){
+            vozStatus.textContent = '🎤 Ouvi: "' + resto + '"';
+            input.value = resto;
+            enviar();
+          } else {
+            aguardandoComando = true;
+            vozStatus.textContent = '🎤 Pode falar, estou ouvindo...';
+          }
+        }
+      } else {
+        vozStatus.textContent = '🎤 Ouvi: "' + transcricaoOriginal + '"';
+        input.value = transcricaoOriginal;
+        aguardandoComando = false;
+        enviar();
+      }
+    }
+  };
+
+  r.onerror = (event) => {
+    console.warn('Erro no reconhecimento de voz:', event.error);
+  };
+
+  r.onend = () => {
+    if (escutaAtiva){
+      try { r.start(); } catch(e){}
+    }
+  };
+
+  return r;
+}
+
+function ativarEscuta(){
+  if (!SpeechRecognitionAPI){
+    vozStatus.textContent = 'Reconhecimento de voz não disponível neste navegador (use Chrome).';
+    return;
+  }
+  escutaAtiva = true;
+  micBtn.classList.add('ativo');
+  vozStatus.textContent = '🎤 Escutando... diga "GrokZão" pra ativar';
+  recognition = criarRecognition();
+  try { recognition.start(); } catch(e){}
+}
+
+function desativarEscuta(){
+  escutaAtiva = false;
+  aguardandoComando = false;
+  micBtn.classList.remove('ativo');
+  vozStatus.textContent = '';
+  if (recognition){
+    try { recognition.stop(); } catch(e){}
+  }
+}
+
+micBtn.addEventListener('click', () => {
+  if (escutaAtiva) desativarEscuta();
+  else ativarEscuta();
+});
+
+// pausa a escuta enquanto o robô fala, pra não se ouvir
+player.addEventListener('play', () => { botoFalando = true; });
+player.addEventListener('pause', () => { botoFalando = false; });
+player.addEventListener('ended', () => { botoFalando = false; });
+
+// ---------- Carregar histórico salvo ao abrir a página ----------
 async function carregarHistorico(){
   try{
     const resp = await fetch('/historico');
     const dados = await resp.json();
-    if(dados.mensagens){
-      dados.mensagens.forEach(m => addMsg(m.texto, m.quem));
-    }
-  }catch(e){}
+    (dados.mensagens || []).forEach(m => addMsg(m.texto, m.quem));
+  }catch(e){
+    console.warn('Não foi possível carregar o histórico salvo.');
+  }
 }
 carregarHistorico();
 </script>
+
 </body>
 </html>
