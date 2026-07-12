@@ -1,8 +1,0 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "com.grokzao.twa",
-    "sha256_cert_fingerprints": ["46:56:7A:EB:7C:A1:17:C5:76:21:98:F7:CD:EF:25:25:14:8A:3A:A9:0B:C3:2B:01:F8:E4:0E:E5:24:AB:96:42"]
-  }
-}]
