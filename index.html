@@ -312,13 +312,34 @@ function normalizar(txt){
   return txt.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 }
 
+function distanciaEdicao(a, b){
+  const dp = Array.from({length: a.length + 1}, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++){
+    for (let j = 1; j <= b.length; j++){
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return dp[a.length][b.length];
+}
+
 function encontrarPalavraAtivacao(textoNormalizado){
+  // tenta achar a substring diretamente primeiro
   for (const palavra of PALAVRAS_ATIVACAO){
     const p = normalizar(palavra);
     const idx = textoNormalizado.indexOf(p);
-    if (idx !== -1){
-      return idx + p.length;
+    if (idx !== -1) return idx + p.length;
+  }
+  // se não achou, tenta comparar palavra por palavra com tolerância a erro (fala parecida)
+  const palavras = textoNormalizado.split(/\s+/);
+  let posAcumulada = 0;
+  for (const w of palavras){
+    if (w.length >= 3 && distanciaEdicao(w, 'alien') <= 2){
+      return posAcumulada + w.length;
     }
+    posAcumulada += w.length + 1;
   }
   return -1;
 }
@@ -334,7 +355,13 @@ function criarRecognition(){
 
     for (let i = event.resultIndex; i < event.results.length; i++){
       const resultado = event.results[i];
-      if (!resultado.isFinal) continue;
+
+      if (!resultado.isFinal){
+        if (!aguardandoComando){
+          vozStatus.textContent = '🎤 ouvindo: "' + resultado[0].transcript + '"';
+        }
+        continue;
+      }
 
       const transcricaoOriginal = resultado[0].transcript;
       const transcricao = normalizar(transcricaoOriginal);
